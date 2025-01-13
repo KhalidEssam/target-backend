@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const PartyOrganization = require("../models/PartyOrg");
 
 // Sub-schema for order items (vehicles or equipment)
 const OrderItemSchema = new mongoose.Schema({
@@ -28,6 +29,18 @@ const WorkOrderSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Admin", // Reference to the admin who created the order
       required: true,
+    },
+    partyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "PartyOrganization", // Reference to the party organization who requested the order
+      required: true,
+      validate: {
+        isAsync: true,
+        validator: async function(v) {
+          const count = await PartyOrganization.countDocuments({ _id: v });
+          return count > 0;
+        },
+      },
     },
     description: {
       type: String,
