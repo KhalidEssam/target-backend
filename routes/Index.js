@@ -4,10 +4,10 @@ const router = express.Router();
 const userController = require('../controllers/userController');
 // Import order controller
 const orderController = require('../controllers/orderController');
-
-
 // Import party controller
 const partyController = require('../controllers/partyController');
+// import profile info controller
+const profileInfoController = require('../controllers/profileInfoController');
 
 // Home route
 router.get('/', userController.home);
@@ -24,10 +24,6 @@ router.delete('/orders/:id', orderController.deleteOrder);
 
 
 
-
-// PartyOrg routes
-
-
 // PartyOrg routes
 router.get('/parties', partyController.getAllParties);
 router.post('/parties', partyController.createParty);
@@ -35,6 +31,12 @@ router.get('/parties/:id', partyController.getPartyById);
 router.put('/parties/:id', partyController.updateParty);    
 router.delete('/parties/:id', partyController.deleteParty);
 router.get('/parties/type/:type', partyController.getPartyByType);
+
+// ProfileInfo routes
+// router.get('/profile', profileInfoController.getProfileInfo);
+router.post('/profile/:userId', profileInfoController.editProfileController);
+router.post('/profiles/:userId', profileInfoController.editProfileControllers);
+router.get('/profile/:userId', profileInfoController.getProfileData);
 
 
 

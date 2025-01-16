@@ -6,6 +6,9 @@ const path = require('path');
 const dotenv = require('dotenv');
 const app = express();
 const db = require('./config/db');
+const cors = require('cors');
+
+app.use(cors());
 
 // Connect to database
 db();

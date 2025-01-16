@@ -3,6 +3,7 @@ const WorkOrder = require('../models/WorkOrder');
 // // Create a new work order
 exports.createOrder = async (req, res) => {
     try {
+        console.log("Creating new work order..." , req.body);
         const newOrder = new WorkOrder(req.body);
         const savedOrder = await newOrder.save();
         res.status(201).json(savedOrder);

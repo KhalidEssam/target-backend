@@ -26,7 +26,7 @@ const WorkOrderSchema = new mongoose.Schema(
     },
     items: [OrderItemSchema], // Array of vehicles or equipment involved in the order
     adminId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: "Admin", // Reference to the admin who created the order
       required: true,
     },
