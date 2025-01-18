@@ -39,9 +39,4 @@ router.post('/profiles/:userId', profileInfoController.editProfileControllers);
 router.get('/profile/:userId', profileInfoController.getProfileData);
 
 
-
-
-
-
-
 module.exports = router;
