@@ -21,7 +21,7 @@ const WorkOrderSchema = new mongoose.Schema(
   {
     type: {
       type: String,
-      enum: ["Maintenance", "Suppliance"], // Order type: Maintenance or Suppliance
+      enum: ["Maintenance", "Suppliance" , "Consultation" , "Construction"], // Order type: Maintenance or Suppliance
       required: true,
     },
     items: [OrderItemSchema], // Array of vehicles or equipment involved in the order

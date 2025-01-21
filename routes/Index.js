@@ -37,6 +37,7 @@ router.get('/parties/type/:type', partyController.getPartyByType);
 router.post('/profile/:userId', profileInfoController.editProfileController);
 router.post('/profiles/:userId', profileInfoController.editProfileControllers);
 router.get('/profile/:userId', profileInfoController.getProfileData);
+router.get('/profiles/:userId', profileInfoController.getProfileDatas);
 
 
 module.exports = router;
