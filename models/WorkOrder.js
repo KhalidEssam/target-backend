@@ -13,7 +13,9 @@ const OrderItemSchema = new mongoose.Schema({
     required: true,
     refPath: "items.type", // Dynamic reference to 'Vehicle' or 'Equipment' collection
   },
+  quantity: Number, // Quantity of the item
   description: String, // Optional description of the item
+  imageUrls: [String], // Array of URLs of images of the item
 });
 
 // Main Work Order Schema

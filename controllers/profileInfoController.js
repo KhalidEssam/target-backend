@@ -12,7 +12,7 @@ const editProfileController = async (req, res) => {
       return res.status(400).json({ error: "User ID is required" });
     }
 
-    console.log("Request body:", req.body);
+    // console.log("Request body:", req.body);
 
     // Step 1: Retrieve the current user profile from Okta
     const getUserResponse = await fetch(
@@ -68,7 +68,7 @@ const editProfileController = async (req, res) => {
     }
 
     const updatedUser = await updateResponse.json();
-    console.log("Updated user in Okta:", updatedUser);
+    // console.log("Updated user in Okta:", updatedUser);
 
     res.status(200).json({
       message: "Profile updated successfully",

@@ -39,6 +39,7 @@ exports.getOrderById = async (req, res) => {
 
 // Update a work order by ID
 exports.updateOrder = async (req, res) => {
+    console.log("Updating work order..." , req.body);
     try {
         const updatedOrder = await WorkOrder.findByIdAndUpdate(req.params.id, req.body, { new: true });
         if (!updatedOrder) {

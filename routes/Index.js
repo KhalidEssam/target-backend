@@ -9,6 +9,11 @@ const partyController = require('../controllers/partyController');
 // import profile info controller
 const profileInfoController = require('../controllers/profileInfoController');
 
+// Import cloudinary controller
+
+const upload = require("../config/cloudinaryConfig"); // Multer configuration
+const uploaderController = require('../controllers/uploaderController');
+
 // Home route
 router.get('/', userController.home);
 
@@ -38,6 +43,15 @@ router.post('/profile/:userId', profileInfoController.editProfileController);
 router.post('/profiles/:userId', profileInfoController.editProfileControllers);
 router.get('/profile/:userId', profileInfoController.getProfileData);
 router.get('/profiles/:userId', profileInfoController.getProfileDatas);
+
+
+// cloudinary routes
+
+// Route for uploading a single file
+router.post("/upload-single", upload.single("file"), uploaderController.uploadImage);
+
+// Route for uploading multiple files
+router.post("/upload-multiple", upload.array("files", 5), uploaderController.uploadImages);
 
 
 module.exports = router;
