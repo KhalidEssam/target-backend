@@ -8,11 +8,6 @@ const OrderItemSchema = new mongoose.Schema({
     enum: ["Vehicle", "Equipment"], // Specify whether the item is a vehicle or equipment
     required: true,
   },
-  itemId: {
-    type: mongoose.Schema.Types.ObjectId, // Reference to the item's unique ID
-    required: true,
-    refPath: "items.type", // Dynamic reference to 'Vehicle' or 'Equipment' collection
-  },
   quantity: Number, // Quantity of the item
   description: String, // Optional description of the item
   imageUrls: [String], // Array of URLs of images of the item
@@ -72,5 +67,8 @@ const WorkOrderSchema = new mongoose.Schema(
 
 // Create models
 const WorkOrder = mongoose.model("WorkOrder", WorkOrderSchema);
+const OrderItem = mongoose.model("OrderItem", OrderItemSchema);
 
-module.exports = WorkOrder;
+
+
+module.exports = { WorkOrder, OrderItem };

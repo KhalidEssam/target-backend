@@ -1,9 +1,10 @@
 const { v2: cloudinary } = require("cloudinary");
 
-// Upload a single image
 const uploadImage = async (req, res) => {
     try {
         const file = req.file;
+        const { itemId } = req.body; // Extract itemId from request
+
         if (!file) {
             return res.status(400).json({ error: "No file uploaded" });
         }
@@ -14,13 +15,16 @@ const uploadImage = async (req, res) => {
         if (!result || !result.secure_url) {
             return res.status(400).json({ error: "Failed to upload image to Cloudinary" });
         }
+
+        // Respond with the image URL and itemId
         console.log(result.secure_url);
-        res.status(200).json({ imageUrl: result.secure_url });
+        res.status(200).json({ imageUrl: result.secure_url, itemId });
     } catch (error) {
         console.error("Error uploading file:", error);
         res.status(500).json({ error: "Failed to upload file" });
     }
 };
+
 
 // Upload multiple images
 const uploadImages = async (req, res) => {
