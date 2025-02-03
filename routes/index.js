@@ -51,6 +51,7 @@ router.post('/profile/:userId', profileInfoController.editProfileController);
 router.post('/profiles/:userId', profileInfoController.editProfileControllers);
 router.get('/profile/:userId', profileInfoController.getProfileData);
 router.get('/profiles/:userId', profileInfoController.getProfileDatas);
+router.post('/profile-asign/:userId', profileInfoController.edit_User_Profile_App_Asignment_Controller);
 
 
 // cloudinary routes
