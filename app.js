@@ -1,48 +1,55 @@
 // app.js
+require('dotenv').config(); // FIRST
 const express = require('express');
-const mongoose = require('mongoose');
-
 const path = require('path');
-const dotenv = require('dotenv');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
+
 const app = express();
 const db = require('./config/db');
-const cors = require('cors');
 
-app.use(cors());
-
-// Connect to database
+// Connect to DB
 db();
 
-// Load environment variables
-dotenv.config();
+// Security headers
+app.use(helmet());
 
-// Set the view engine to EJS
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
+// CORS
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
-// Middleware for serving static files (CSS, images, etc.)
-app.use(express.static(path.join(__dirname, 'public')));
+// Logging
+app.use(morgan('dev'));
 
-// Middleware for parsing request body (form data, JSON)
+// Parse request body
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Import routes
-const indexRoutes = require('./routes/index');
+// Static files
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Use routes
+// Views
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
+// Routes
+const indexRoutes = require('./routes/index');
 app.use('/', indexRoutes);
 
-//cors
+// 404 handler
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  next();
+  res.status(404).render('404');
 });
 
-// Start server
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+// General error handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).render('500', { error: err });
 });
+
+module.exports = app;
