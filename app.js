@@ -7,6 +7,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimiter = require('./config/rateLimiter');
+const swaggerUi = require('swagger-ui-express');
+const swaggerJsdoc = require('swagger-jsdoc');
 
 const app = express();
 const db = require('./config/db');
@@ -44,6 +46,28 @@ app.set('views', path.join(__dirname, 'views'));
 // Routes
 const indexRoutes = require('./routes/index');
 app.use('/', indexRoutes);
+
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Express API',
+      version: '1.0.0',
+      description: 'API documentation for the Express backend',
+    },
+    servers: [
+      {
+        url: 'http://localhost:3000',
+      },
+    ],
+  },
+  apis: ['./routes/*.js'],
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+
+// Swagger UI
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // 404 handler
 app.use((req, res, next) => {
