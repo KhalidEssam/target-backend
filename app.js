@@ -6,12 +6,16 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const rateLimiter = require('./config/rateLimiter');
 
 const app = express();
 const db = require('./config/db');
 
 // Connect to DB
 db();
+
+// Rate limiter
+app.use(rateLimiter);
 
 // Security headers
 app.use(helmet());
