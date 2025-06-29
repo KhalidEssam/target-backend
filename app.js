@@ -46,6 +46,9 @@ app.set('views', path.join(__dirname, 'views'));
 // Routes
 const indexRoutes = require('./routes/index');
 app.use('/', indexRoutes);
+// const paymentRoutes = require('./routes/paymentRoutes');
+
+// app.use('/api/payment', paymentRoutes);
 
 const swaggerOptions = {
   definition: {
@@ -73,13 +76,19 @@ if (process.env.NODE_ENV !== 'production') {
 
 // 404 handler
 app.use((req, res, next) => {
-  res.status(404).render('404');
+  res.status(404).json({
+    success: false,
+    error: 'Not Found'
+  });
 });
 
 // General error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).render('500', { error: err });
+  res.status(500).json({
+    success: false,
+    error: err.message || 'Internal Server Error'
+  });
 });
 
 module.exports = app;

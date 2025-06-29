@@ -9,5 +9,6 @@ router.use("/", require("./profileRoutes"));
 router.use("/", require("./galleryRoutes"));
 router.use("/", require("./pageRoutes"));
 router.use("/", require("./uploadRoutes"));
+router.use("/", require("./paymentRoutes"));
 
 module.exports = router;
