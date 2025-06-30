@@ -55,8 +55,10 @@ const throttledInitiatePayment = throttle(async (req, res) => {
         state: "NA"
       },
       currency: "EGP",
-      integration_id: parseInt(process.env.PAYMOB_INTEGRATION_ID)
+      integration_id: parseInt(process.env.PAYMOB_INTEGRATION_ID),
+      return_url: "https://target-website-alpha.vercel.app/payment/verify"
     });
+    
 
     const paymentToken = paymentKeyRes.data.token;
 
