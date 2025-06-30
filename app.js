@@ -9,8 +9,12 @@ const morgan = require('morgan');
 const rateLimiter = require('./config/rateLimiter');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
+const http = require('http');
+const { handlePaymentWebhook, handleWebSocket } = require('./controllers/webhookController');
 
 const app = express();
+
+const server = http.createServer(app);
 const db = require('./config/db');
 
 // Connect to DB
@@ -46,9 +50,21 @@ app.set('views', path.join(__dirname, 'views'));
 // Routes
 const indexRoutes = require('./routes/index');
 app.use('/', indexRoutes);
-// const paymentRoutes = require('./routes/paymentRoutes');
 
-// app.use('/api/payment', paymentRoutes);
+// Webhook route for PayMob
+app.post('/api/webhook/paymob', handlePaymentWebhook);
+
+// WebSocket upgrade handler on /api/websocket
+server.on('upgrade', (request, socket, head) => {
+  if (request.url === '/api/websocket') {
+    handleWebSocket(request, socket, head);
+  } else {
+    socket.destroy();
+  }
+});
+
+// WebSocket route
+app.get('/api/websocket', handleWebSocket);
 
 const swaggerOptions = {
   definition: {

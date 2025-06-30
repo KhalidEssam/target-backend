@@ -79,7 +79,7 @@ const throttledInitiatePayment = throttle(async (req, res) => {
       details: error.response?.data || error.message
     });
   }
-}, 2000); // Allow one request every 2 seconds (per instance)
+}, 5000); // Allow one request every 2 seconds (per instance)
 
 exports.initiatePayment = (req, res) => {
   throttledInitiatePayment(req, res);
