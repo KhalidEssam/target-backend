@@ -14,7 +14,7 @@ const throttledInitiatePayment = throttle(async (req, res) => {
     });
     const authToken = authTokenRes.data.token;
 
-    // Step 2: Create Paymob order with Authorization header
+    // Step 2: Create Paymob order
     const orderRes = await axios.post(
       'https://accept.paymob.com/api/ecommerce/orders',
       {
@@ -33,7 +33,7 @@ const throttledInitiatePayment = throttle(async (req, res) => {
 
     const paymobOrderId = orderRes.data.id;
 
-    // Step 3: Create payment key
+    // Step 3: Create payment key (return_url is NOT supported here)
     const paymentKeyRes = await axios.post('https://accept.paymob.com/api/acceptance/payment_keys', {
       auth_token: authToken,
       amount_cents: Math.round(amount * 100),
@@ -55,16 +55,17 @@ const throttledInitiatePayment = throttle(async (req, res) => {
         state: "NA"
       },
       currency: "EGP",
-      integration_id: parseInt(process.env.PAYMOB_INTEGRATION_ID),
-      return_url: "https://target-website-alpha.vercel.app/payment/verify"
+      integration_id: parseInt(process.env.PAYMOB_INTEGRATION_ID)
     });
-    
 
     const paymentToken = paymentKeyRes.data.token;
 
-    // Step 4: Return iframe URL
-    const paymentUrl = `https://accept.paymob.com/api/acceptance/iframes/${process.env.PAYMOB_IFRAME_ID}?payment_token=${paymentToken}`;
+    // Step 4: Construct iframe URL with return_url as a query param
+    const returnUrl = process.env.PAYMOB_RETURN_URL || 'https://target-website-alpha.vercel.app/payment/verify';
+    const encodedReturnUrl = encodeURIComponent(returnUrl);
+    const paymentUrl = `https://accept.paymob.com/api/acceptance/iframes/${process.env.PAYMOB_IFRAME_ID}?payment_token=${paymentToken}&return_url=${encodedReturnUrl}`;
 
+    // Final response
     res.json({
       success: true,
       paymentUrl
