@@ -90,16 +90,16 @@ exports.handlePaymentWebhook = async (req, res) => {
 
     const flatObj = flatten(obj);
     const hmacString = fields.map((field) => flatObj[field] ?? "").join("");
-    const calculatedHmac = crypto.createHmac("sha512", secret).update(hmacString).digest("hex");
+    const calculatedHmac = crypto.createHmac("sha256", secret).update(hmacString).digest("hex");
 
-    console.log("🔐 Calculated HMAC:", calculatedHmac);
-    console.log("🔐 Received HMAC:", hmac);
-
-    if (calculatedHmac !== hmac) {
+    console.log("Calculated HMAC (lower):", calculatedHmac.toLowerCase());
+    console.log("Received HMAC  (lower):", hmac.toLowerCase());
+    
+    if (calculatedHmac.toLowerCase() !== hmac.toLowerCase()) {
       console.error("❌ HMAC validation failed");
       return res.status(401).json({ error: "Invalid HMAC" });
     }
-
+    
     const status = success ? "success" : "failed";
 
     const payload = {
