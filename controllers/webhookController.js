@@ -33,7 +33,8 @@ exports.handlePaymentWebhook = async (req, res) => {
     console.log("🔹 Query:", JSON.stringify(req.query, null, 2));
     console.log("🔹 Body:", JSON.stringify(req.body, null, 2));
 
-    const { hmac, obj } = req.body;
+    const hmac = req.query.hmac;
+    const obj = req.body.obj;
 
     if (!hmac || !obj) {
       console.error("❌ Missing hmac or obj in body");
