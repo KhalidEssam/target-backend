@@ -139,8 +139,9 @@ exports.handlePaymentWebhook = async (req, res) => {
 
 // WebSocket route
 exports.handleWebSocket = (req, socket, head) => {
-  console.log("🔄 Upgrading HTTP to WebSocket");
-  wss.handleUpgrade(req, socket, head, (ws) => {
-    wss.emit("connection", ws, req);
-  });
-};
+    console.log("🔄 Upgrading HTTP to WebSocket");
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      wss.emit("connection", ws, req);
+    });
+  };
+  

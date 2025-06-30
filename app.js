@@ -64,8 +64,6 @@ server.on('upgrade', (request, socket, head) => {
   }
 });
 
-// WebSocket route
-app.get('/api/websocket', handleWebSocket);
 
 const swaggerOptions = {
   definition: {
