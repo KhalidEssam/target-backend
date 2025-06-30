@@ -67,11 +67,27 @@ exports.handlePaymentWebhook = async (req, res) => {
 
     // Flatten nested fields
     const fields = [
-      "amount_cents", "created_at", "currency", "error_occured", "has_parent_transaction",
-      "id", "integration_id", "is_3d_secure", "is_auth", "is_capture", "is_refunded",
-      "is_standalone_payment", "is_voided", "order.id", "owner", "pending",
-      "source_data.pan", "source_data.sub_type", "source_data.type", "success"
-    ];
+        "amount_cents",
+        "created_at",
+        "currency",
+        "error_occured",
+        "has_parent_transaction",
+        "id",
+        "integration_id",
+        "is_3d_secure",
+        "is_auth",
+        "is_capture",
+        "is_refunded",
+        "is_standalone_payment",
+        "is_voided",
+        "order.id",
+        "owner",
+        "pending",
+        "source_data.pan",
+        "source_data.sub_type",
+        "source_data.type",
+        "success"
+      ];
 
     const flatten = (obj) => {
       const res = {};
@@ -90,7 +106,7 @@ exports.handlePaymentWebhook = async (req, res) => {
 
     const flatObj = flatten(obj);
     const hmacString = fields.map((field) => flatObj[field] ?? "").join("");
-    const calculatedHmac = crypto.createHmac("sha256", secret).update(hmacString).digest("hex");
+    const calculatedHmac = crypto.createHmac("sha512", secret).update(hmacString).digest("hex");
 
     console.log("Calculated HMAC (lower):", calculatedHmac.toLowerCase());
     console.log("Received HMAC  (lower):", hmac.toLowerCase());
