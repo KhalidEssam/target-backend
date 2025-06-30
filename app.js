@@ -1,4 +1,3 @@
-// app.js
 require('dotenv').config(); // FIRST
 const express = require('express');
 const path = require('path');
@@ -9,12 +8,9 @@ const morgan = require('morgan');
 const rateLimiter = require('./config/rateLimiter');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
-const http = require('http');
-const { handlePaymentWebhook, handleWebSocket } = require('./controllers/webhookController');
+const { handlePaymentWebhook } = require('./controllers/webhookController');
 
 const app = express();
-
-const server = http.createServer(app);
 const db = require('./config/db');
 
 // Connect to DB
@@ -54,16 +50,6 @@ app.use('/', indexRoutes);
 
 // Webhook route for PayMob
 app.post('/api/webhook/paymob', handlePaymentWebhook);
-
-// WebSocket upgrade handler on /api/websocket
-server.on('upgrade', (request, socket, head) => {
-  if (request.url === '/api/websocket') {
-    handleWebSocket(request, socket, head);
-  } else {
-    socket.destroy();
-  }
-});
-
 
 const swaggerOptions = {
   definition: {
