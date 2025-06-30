@@ -1,19 +1,79 @@
 const { WorkOrder, OrderItem } = require("../models/WorkOrder");
 const PartyOrganization = require('../models/PartyOrg');
+const Payment = require('../models/Payment');
+const asyncHandler = require('express-async-handler');
+const { v4: uuidv4 } = require('uuid');
 
-// // Create a new work order
-exports.createOrder = async (req, res) => {
+// Create a new work order with payment information
+exports.createOrder = asyncHandler(async (req, res) => {
     try {
-        console.log("Creating new work order..." , req.body);
-        const newOrder = new WorkOrder(req.body);
-        const savedOrder = await newOrder.save();
+        const {
+            type,
+            items,
+            adminId,
+            partyId,
+            description,
+            paymentDueDate,
+            paymentMethod,
+            ...rest
+        } = req.body;
+
+        // Calculate total amount from items if not provided
+        let calculatedTotalAmount = 0;
+        if (items) {
+            items.forEach(item => {
+                if (item.quantity && item.price) {
+                    calculatedTotalAmount += item.quantity * item.price;
+                }
+            });
+        }
+
+        // Use provided totalAmount or calculated one
+        const orderTotalAmount = req.body.totalAmount || calculatedTotalAmount;
+
+        // Create the order
+        const order = new WorkOrder({
+            type,
+            items,
+            adminId,
+            partyId,
+            description,
+            totalAmount: orderTotalAmount,
+            paymentDueDate,
+            status: "Pending",
+            paymentStatus: "pending",
+            ...rest
+        });
+
+        // Save the order first to get orderId
+        const savedOrder = await order.save();
+
+        // Create initial payment record if payment info provided
+        if (paymentMethod) {
+            const payment = new Payment({
+                orderId: savedOrder._id,
+                amount: orderTotalAmount, // Use the calculated or provided total amount
+                paymentMethod,
+                paymentId: uuidv4(),
+                transactionId: uuidv4(),
+                paymentDate: new Date(),         
+                provider: "Paymob",
+                status: "pending"
+            });
+            
+            const savedPayment = await payment.save();
+            savedOrder.payments.push(savedPayment._id);
+            await savedOrder.save();
+        }
+
         res.status(201).json(savedOrder);
     } catch (error) {
+        console.error('Error creating order:', error);
         res.status(400).json({ message: error.message });
     }
-};
+});
 
-// // Get all work orders
+// Get all work orders
 exports.getAllOrders = async (req, res) => {
     try {
       console.log("Getting all work orders...");
@@ -23,7 +83,6 @@ exports.getAllOrders = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
-
 
 // get all workorders by admin id
 exports.getOrdersByAdminId = async (req, res) => {
@@ -54,34 +113,105 @@ exports.getOrdersByParty_phoneNumber = async (req, res) => {
     }
 } // get all workorders by partyorganization phoneNumber 
 
-
-// Get a single work order by ID
-exports.getOrderById = async (req, res) => {
-  console.log("Getting work order by ID...");
+// Get a single work order by ID with payments
+exports.getOrderById = asyncHandler(async (req, res) => {
     try {
+        const order = await WorkOrder.findById(req.params.id)
+            .populate('payments', 'paymentId amount status paymentMethod transactionId paymentDate');
+        
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        // Calculate payment status based on payments
+        if (order.payments && order.payments.length > 0) {
+            const totalPaid = order.payments.reduce((sum, payment) => {
+                if (payment.status === 'completed') {
+                    return sum + payment.amount;
+                }
+                return sum;
+            }, 0);
+
+            if (totalPaid >= order.totalAmount) {
+                order.paymentStatus = 'paid';
+            } else if (totalPaid > 0) {
+                order.paymentStatus = 'partially_paid';
+            }
+        }
+
+        res.status(200).json(order);
+    } catch (error) {
+        console.error('Error getting order:', error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Update a work order by ID including payment status
+exports.updateOrder = asyncHandler(async (req, res) => {
+    try {
+        const { 
+            status,
+            paymentStatus,
+            totalAmount,
+            paymentMethod,
+            paymentDueDate,
+            ...rest
+        } = req.body;
+
         const order = await WorkOrder.findById(req.params.id);
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
         }
-        res.status(200).json(order);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
 
-// Update a work order by ID
-exports.updateOrder = async (req, res) => {
-    console.log("Updating work order..." , req.body);
-    try {
-        const updatedOrder = await WorkOrder.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!updatedOrder) {
-            return res.status(404).json({ message: 'Order not found' });
+        // Update payment status if provided
+        if (paymentStatus) {
+            order.paymentStatus = paymentStatus;
         }
+
+        // Update total amount if provided
+        if (totalAmount) {
+            order.totalAmount = totalAmount;
+        }
+
+        // Update payment due date if provided
+        if (paymentDueDate) {
+            order.paymentDueDate = paymentDueDate;
+        }
+
+        // Update other fields
+        order.status = status || order.status;
+        
+        // Save the order first to get updated orderId
+        const updatedOrder = await order.save();
+
+        // If paymentMethod is provided, create or update payment
+        if (paymentMethod) {
+            // Check if there's an existing payment
+            const existingPayment = await Payment.findOne({ orderId: updatedOrder._id });
+            
+            if (existingPayment) {
+                existingPayment.paymentMethod = paymentMethod;
+                existingPayment.status = "pending";
+                await existingPayment.save();
+            } else {
+                const newPayment = new Payment({
+                    orderId: updatedOrder._id,
+                    amount: totalAmount || updatedOrder.totalAmount,
+                    paymentMethod,
+                    status: "pending"
+                });
+                const savedPayment = await newPayment.save();
+                updatedOrder.payments.push(savedPayment._id);
+                await updatedOrder.save();
+            }
+        }
+
         res.status(200).json(updatedOrder);
     } catch (error) {
+        console.error('Error updating order:', error);
         res.status(400).json({ message: error.message });
     }
-};
+});
 
 // Delete a work order by ID
 exports.deleteOrder = async (req, res) => {

@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const PartyOrganization = require("../models/PartyOrg");
+const Payment = require("./Payment");
 
 // Sub-schema for order items (vehicles or equipment)
 const OrderItemSchema = new mongoose.Schema({
@@ -53,6 +54,26 @@ const WorkOrderSchema = new mongoose.Schema(
       enum: ["Low", "Medium", "High"], // Priority level
       default: "Medium",
     },
+    totalAmount: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    paymentStatus: {
+      type: String,
+      enum: ["pending", "paid", "partially_paid", "overdue", "refunded"],
+      default: "pending"
+    },
+    payments: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Payment"
+    }],
+    lastPaymentDate: {
+      type: Date
+    },
+    paymentDueDate: {
+      type: Date
+    },
     createdAt: {
       type: Date,
       default: Date.now, // Automatically set creation date
@@ -61,6 +82,12 @@ const WorkOrderSchema = new mongoose.Schema(
       type: Date,
       default: Date.now, // Automatically set update date
     },
+    paidAmount: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    
   },
   { timestamps: true } // Automatically adds createdAt and updatedAt fields
 );

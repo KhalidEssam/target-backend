@@ -1,6 +1,8 @@
 const axios = require('axios');
+const { throttle } = require('lodash');
 
-exports.initiatePayment = async (req, res) => {
+// Throttle payment initiation to prevent rapid consecutive requests
+const throttledInitiatePayment = throttle(async (req, res) => {
   try {
     console.log("initiating");
 
@@ -12,19 +14,26 @@ exports.initiatePayment = async (req, res) => {
     });
     const authToken = authTokenRes.data.token;
 
-    // ✅ Step 2: Create Paymob order (include auth_token in body)
-    const orderRes = await axios.post('https://accept.paymob.com/api/ecommerce/orders', {
-      auth_token: authToken,
-      merchant_order_id: orderId,
-      amount_cents: Math.round(amount * 100),
-      currency: 'EGP',
-      delivery_needed: false,
-      items: []
-    });
+    // Step 2: Create Paymob order with Authorization header
+    const orderRes = await axios.post(
+      'https://accept.paymob.com/api/ecommerce/orders',
+      {
+        merchant_order_id: orderId,
+        amount_cents: Math.round(amount * 100),
+        currency: 'EGP',
+        delivery_needed: false,
+        items: [],
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
 
     const paymobOrderId = orderRes.data.id;
 
-    // ✅ Step 3: Create payment key
+    // Step 3: Create payment key
     const paymentKeyRes = await axios.post('https://accept.paymob.com/api/acceptance/payment_keys', {
       auth_token: authToken,
       amount_cents: Math.round(amount * 100),
@@ -51,7 +60,7 @@ exports.initiatePayment = async (req, res) => {
 
     const paymentToken = paymentKeyRes.data.token;
 
-    // ✅ Step 4: Return iframe URL
+    // Step 4: Return iframe URL
     const paymentUrl = `https://accept.paymob.com/api/acceptance/iframes/${process.env.PAYMOB_IFRAME_ID}?payment_token=${paymentToken}`;
 
     res.json({
@@ -67,4 +76,8 @@ exports.initiatePayment = async (req, res) => {
       details: error.response?.data || error.message
     });
   }
+}, 2000); // Allow one request every 2 seconds (per instance)
+
+exports.initiatePayment = (req, res) => {
+  throttledInitiatePayment(req, res);
 };
