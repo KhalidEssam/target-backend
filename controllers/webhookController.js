@@ -28,107 +28,75 @@ const broadcastToClients = (message) => {
   });
 };
 
-// Webhook endpoint to handle PayMob transaction notifications
-
+// 👇 Correct Webhook Handler
 exports.handlePaymentWebhook = async (req, res) => {
-    try {
-        console.log("Raw request body:", JSON.stringify(req.body, null, 2));
-        console.log("Query params:", req.query);
+  try {
+    const { hmac, obj } = req.body;
 
-        // PayMob sends HMAC as query parameter and data in JSON body
-        const payload = req.body;
-        const hmac = req.query.hmac;
-
-        if (!payload || typeof payload !== 'object') {
-            return res.status(400).json({ error: 'Invalid payload format' });
-        }
-
-        // Extract parameters from the correct locations
-        const transaction_id = payload.obj?.id || payload.id;
-        const success = payload.success || 
-                       payload.obj?.success || 
-                       (payload.obj?.migs_result === 'SUCCESS') || 
-                       (payload.obj?.txn_response_code === 'APPROVED');
-        const order_id = payload.obj?.order?.id || 
-                        payload.obj?.order_info || 
-                        payload.payment_key_claims?.order_id;
-
-        console.log("Extracted parameters:", {
-            transaction_id,
-            success,
-            order_id,
-            hmac
-        });
-
-        if (!transaction_id || success === undefined || !order_id || !hmac) {
-            console.error("Missing parameters:", { 
-                transaction_id, 
-                success, 
-                order_id, 
-                hmac 
-            });
-            return res.status(400).json({ 
-                error: 'Missing required parameters',
-                details: {
-                    received_hmac: !!hmac,
-                    received_transaction_id: !!transaction_id,
-                    received_success: success !== undefined,
-                    received_order_id: !!order_id
-                }
-            });
-        }
-
-        const secret = process.env.PAYMOB_SECRET_KEY;
-        if (!secret) {
-            return res.status(500).json({ error: 'PAYMOB_SECRET_KEY not configured' });
-        }
-
-        // Construct string to hash from the JSON payload
-        const stringToHash = JSON.stringify(payload)
-            .replace(/\//g, '\\/')  // Escape forward slashes
-            .replace(/\s+/g, '');    // Remove whitespace
-
-        // Generate HMAC
-        const calculatedHmac = crypto.createHmac('sha256', secret)
-                                   .update(stringToHash)
-                                   .digest('hex');
-
-        // Timing-safe compare
-        if (!crypto.timingSafeEqual(
-            Buffer.from(hmac, 'hex'),
-            Buffer.from(calculatedHmac, 'hex')
-        )) {
-            console.error("HMAC validation failed");
-            return res.status(401).json({ error: 'Invalid HMAC signature' });
-        }
-
-        // Determine payment status
-        const status = success ? 'success' : 'failed';
-
-        // Broadcast to WebSocket clients
-        broadcastToClients({
-            type: 'payment_status_update',
-            transaction_id,
-            status,
-            order_id,
-            details: payload
-        });
-
-        // Respond to PayMob
-        res.status(200).json({ success: true });
-
-    } catch (error) {
-        console.error('Error handling Paymob webhook:', error);
-        res.status(500).json({ 
-            error: 'Internal server error',
-            details: error.message 
-        });
+    if (!hmac || !obj) {
+      return res.status(400).json({ error: 'Missing HMAC or obj payload' });
     }
+
+    const transaction_id = obj.id;
+    const order_id = obj.order?.id;
+    const success = obj.success;
+
+    if (!transaction_id || !order_id || success === undefined) {
+      return res.status(400).json({ error: 'Missing transaction details' });
+    }
+
+    const secret = process.env.PAYMOB_SECRET_KEY;
+    if (!secret) {
+      return res.status(500).json({ error: 'PAYMOB_SECRET_KEY not set' });
+    }
+
+    // 👇 Follow Paymob's exact order of HMAC fields
+    const fields = [
+      'amount_cents', 'created_at', 'currency', 'error_occured', 'has_parent_transaction',
+      'id', 'integration_id', 'is_3d_secure', 'is_auth', 'is_capture', 'is_refunded',
+      'is_standalone_payment', 'is_voided', 'order.id', 'owner', 'pending',
+      'source_data.pan', 'source_data.sub_type', 'source_data.type', 'success'
+    ];
+
+    const flat = (obj) => {
+      const result = {};
+      const recurse = (cur, prop) => {
+        if (Object(cur) !== cur) result[prop] = cur;
+        else for (const key in cur) recurse(cur[key], prop ? `${prop}.${key}` : key);
+      };
+      recurse(obj, '');
+      return result;
+    };
+
+    const flatObj = flat(obj);
+    const hmacString = fields.map((key) => flatObj[key] ?? '').join('');
+    const calculatedHmac = crypto.createHmac('sha512', secret).update(hmacString).digest('hex');
+
+    if (calculatedHmac !== hmac) {
+      console.error('HMAC mismatch');
+      return res.status(401).json({ error: 'Invalid HMAC' });
+    }
+
+    const status = success ? 'success' : 'failed';
+
+    // ✅ Broadcast to frontend via WebSocket
+    broadcastToClients({
+      type: 'payment_status_update',
+      transaction_id,
+      status,
+      order_id,
+      details: obj
+    });
+
+    res.status(200).json({ success: true });
+
+  } catch (err) {
+    console.error('Webhook Error:', err);
+    res.status(500).json({ error: 'Internal server error', details: err.message });
+  }
 };
 
-// Middleware to handle WebSocket connections
 exports.handleWebSocket = (req, socket, head) => {
-  wss.handleUpgrade(req, socket, head, (ws) => {
-    wss.emit("connection", ws, req);
-  });
+  wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
 };
+

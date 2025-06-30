@@ -22,6 +22,7 @@ db();
 
 // Rate limiter
 app.use(rateLimiter);
+app.set('trust proxy', true);
 
 // Security headers
 app.use(helmet());
