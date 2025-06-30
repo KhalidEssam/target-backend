@@ -22,7 +22,7 @@ db();
 
 // Rate limiter
 app.use(rateLimiter);
-app.set('trust proxy', true);
+app.set('trust proxy', 1); // ✅ Best for Railway
 
 // Security headers
 app.use(helmet());
