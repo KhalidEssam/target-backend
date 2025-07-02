@@ -85,26 +85,33 @@ exports.handlePaymentWebhook = async (req, res) => {
 
     const status = success ? "success" : "failed";
 
-    // Lookup payment
-    let payment = await Payment.findOne({ transactionId: transaction_id });
+    // Find the matching payment by Paymob's order_id (set as paymentId in our system)
+    let payment = await Payment.findOne({ paymentId: order_id.toString() });
 
     if (!payment) {
-      console.warn("⚠️ No payment with transactionId found. Trying fallback with metadata.paymob_order_id...");
-      payment = await Payment.findOne({ "metadata.paymob_order_id": order_id });
-      if (!payment) {
-        console.error("❌ Payment not found by transaction or metadata");
-        return res.status(404).json({ error: "Payment not found" });
-      }
+      console.warn("⚠️ No payment found with paymentId. Trying fallback on metadata.paymobOrderId...");
+      payment = await Payment.findOne({ "metadata.paymobOrderId": order_id });
     }
+
+    if (!payment) {
+      console.error("❌ Payment record not found for transaction or order.");
+      return res.status(404).json({ error: "Payment not found" });
+    }
+    console.log("✅ Payment updated:", {
+      transactionId: payment.transactionId,
+      paymentId: payment.paymentId,
+      status: payment.status
+    });
+    
 
     // Update payment
     payment.status = status === "success" ? "completed" : "failed";
-    payment.transactionId = obj.id;
-    payment.paymentId = obj.id;
+    payment.transactionId = obj.id; // This is Paymob's transaction ID
     payment.provider = "Paymob";
     payment.paymentDate = new Date(obj.created_at);
     payment.metadata = obj;
     await payment.save();
+
 
     // Update associated WorkOrder
     const workOrder = await WorkOrder.findById(payment.orderId).populate("payments");
@@ -118,8 +125,8 @@ exports.handlePaymentWebhook = async (req, res) => {
         paidAmount >= workOrder.totalAmount
           ? "paid"
           : paidAmount > 0
-          ? "partially_paid"
-          : "pending";
+            ? "partially_paid"
+            : "pending";
 
       workOrder.lastPaymentDate = new Date();
       await workOrder.save();
