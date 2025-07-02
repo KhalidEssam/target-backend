@@ -7,71 +7,70 @@ const { v4: uuidv4 } = require('uuid');
 // Create a new work order with payment information
 exports.createOrder = asyncHandler(async (req, res) => {
     try {
-        const {
-            type,
-            items,
-            adminId,
-            partyId,
-            description,
-            paymentDueDate,
-            paymentMethod,
-            ...rest
-        } = req.body;
-
-        // Calculate total amount from items if not provided
-        let calculatedTotalAmount = 0;
-        if (items) {
-            items.forEach(item => {
-                if (item.quantity && item.price) {
-                    calculatedTotalAmount += item.quantity * item.price;
-                }
-            });
-        }
-
-        // Use provided totalAmount or calculated one
-        const orderTotalAmount = req.body.totalAmount || calculatedTotalAmount;
-
-        // Create the order
-        const order = new WorkOrder({
-            type,
-            items,
-            adminId,
-            partyId,
-            description,
-            totalAmount: orderTotalAmount,
-            paymentDueDate,
-            status: "Pending",
-            paymentStatus: "pending",
-            ...rest
+      const {
+        type,
+        items,
+        adminId,
+        partyId,
+        description,
+        paymentDueDate,
+        paymentMethod,
+        ...rest
+      } = req.body;
+  
+      // Calculate total amount from items if not provided
+      let calculatedTotalAmount = 0;
+      if (items) {
+        items.forEach(item => {
+          if (item.quantity && item.price) {
+            calculatedTotalAmount += item.quantity * item.price;
+          }
         });
-
-        // Save the order first to get orderId
-        const savedOrder = await order.save();
-
-        // Create initial payment record if payment info provided
-        if (paymentMethod) {
-            const payment = new Payment({
-                orderId: savedOrder._id,
-                amount: orderTotalAmount, // Use the calculated or provided total amount
-                paymentMethod,
-                paymentId: uuidv4(),
-                transactionId: uuidv4(),
-                paymentDate: new Date(),         
-                provider: "Paymob",
-                status: "pending"
-            });
-            
-            const savedPayment = await payment.save();
-            savedOrder.payments.push(savedPayment._id);
-            await savedOrder.save();
-        }
-
-        res.status(201).json(savedOrder);
+      }
+  
+      // Use provided totalAmount or calculated one
+      const orderTotalAmount = req.body.totalAmount || calculatedTotalAmount;
+  
+      // Create the order
+      const order = new WorkOrder({
+        type,
+        items,
+        adminId,
+        partyId,
+        description,
+        totalAmount: orderTotalAmount,
+        paymentDueDate,
+        status: "Pending",
+        paymentStatus: "pending",
+        ...rest
+      });
+  
+      // Save the order first to get orderId
+      const savedOrder = await order.save();
+  
+      // Handle offline payment (e.g., cash on delivery)
+      if (paymentMethod && ["cash", "manual", "bank_transfer"].includes(paymentMethod)) {
+        const payment = new Payment({
+          orderId: savedOrder._id,
+          amount: orderTotalAmount,
+          paymentMethod,
+          paymentDate: new Date(),
+          provider: "Manual",
+          status: "pending"
+        });
+  
+        const savedPayment = await payment.save();
+        savedOrder.payments.push(savedPayment._id);
+        await savedOrder.save();
+      }
+  
+      res.status(201).json(savedOrder);
     } catch (error) {
-        console.error('Error creating order:', error);
-        res.status(400).json({ message: error.message });
+      console.error('Error creating order:', error);
+      res.status(400).json({ message: error.message });
     }
-});
+  });
+  
 
 // Get all work orders
 exports.getAllOrders = async (req, res) => {

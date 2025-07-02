@@ -1,5 +1,6 @@
 const axios = require('axios');
 const { throttle } = require('lodash');
+const Payment = require('../models/Payment');
 
 // Throttle payment initiation to prevent rapid consecutive requests
 const throttledInitiatePayment = throttle(async (req, res) => {
@@ -33,6 +34,8 @@ const throttledInitiatePayment = throttle(async (req, res) => {
 
     const paymobOrderId = orderRes.data.id;
 
+
+
     // Step 3: Create payment key (return_url is NOT supported here)
     const paymentKeyRes = await axios.post('https://accept.paymob.com/api/acceptance/payment_keys', {
       auth_token: authToken,
@@ -64,6 +67,30 @@ const throttledInitiatePayment = throttle(async (req, res) => {
     const returnUrl = process.env.PAYMOB_RETURN_URL || 'https://target-website-alpha.vercel.app/payment/verify';
     const encodedReturnUrl = encodeURIComponent(returnUrl);
     const paymentUrl = `https://accept.paymob.com/api/acceptance/iframes/${process.env.PAYMOB_IFRAME_ID}?payment_token=${paymentToken}&return_url=${encodedReturnUrl}`;
+
+    // 💾 Save payment session to DB
+    const paymentRecord = new Payment({
+      orderId,
+      amount,
+      currency: "EGP",
+      status: "pending",
+      paymentMethod: "online",
+      provider: "Paymob",
+      paymentId: String(paymobOrderId),
+      metadata: {
+        paymobOrderId,
+        integration_id: process.env.PAYMOB_INTEGRATION_ID,
+        iframe_url: paymentUrl
+      }
+    });
+
+    await paymentRecord.save();
+
+    // 🔄 Link to order
+    const WorkOrder = require('../models/WorkOrder').WorkOrder;
+    await WorkOrder.findByIdAndUpdate(orderId, {
+      $push: { payments: paymentRecord._id }
+    });
 
     // Final response
     res.json({
