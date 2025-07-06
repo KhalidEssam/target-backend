@@ -54,6 +54,7 @@ exports.createOrder = asyncHandler(async (req, res) => {
           orderId: savedOrder._id,
           amount: orderTotalAmount,
           paymentMethod,
+          transactionId:savedOrder._id,
           paymentDate: new Date(),
           provider: "Manual",
           status: "pending"
