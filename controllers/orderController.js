@@ -2,7 +2,6 @@ const { WorkOrder, OrderItem } = require("../models/WorkOrder");
 const PartyOrganization = require('../models/PartyOrg');
 const Payment = require('../models/Payment');
 const asyncHandler = require('express-async-handler');
-const { v4: uuidv4 } = require('uuid');
 
 // Create a new work order with payment information
 exports.createOrder = asyncHandler(async (req, res) => {
@@ -155,12 +154,17 @@ exports.updateOrder = asyncHandler(async (req, res) => {
             totalAmount,
             paymentMethod,
             paymentDueDate,
+            items,
             ...rest
         } = req.body;
 
         const order = await WorkOrder.findById(req.params.id);
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
+        }
+
+        if(items){
+            order.items = items;
         }
 
         // Update payment status if provided
@@ -205,6 +209,7 @@ exports.updateOrder = asyncHandler(async (req, res) => {
                 await updatedOrder.save();
             }
         }
+
 
         res.status(200).json(updatedOrder);
     } catch (error) {
