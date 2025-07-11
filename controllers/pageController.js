@@ -12,15 +12,17 @@ exports.getAllPages = async (req, res) => {
 
 // Get page by name
 exports.getPageByName = async (req, res) => {
+  const isVisible= true;
     try {
       const { name } = req.params;
-      const page = await PageModel.findOne({ name });
+      const page = await PageModel.findOne({ name  });
   
       if (!page) {
         return res.status(404).json({ error: "Page not found" });
       }
+      const visibleSections = page.sections.filter(section => section.isVisible);
   
-      res.json(page);
+      res.json({ ...page.toObject(), sections: visibleSections });
     } catch (err) {
       console.error("Error fetching page:", err);
       res.status(500).json({ error: "Internal Server Error" });
