@@ -127,6 +127,7 @@ router.get("/orders/:id", orderController.getOrderById);
 router.put("/orders/:id", orderController.updateOrder);
 router.delete("/orders/:id", orderController.deleteOrder);
 router.get("/orders/admin/:id", orderController.getOrdersByAdminId);
+router.get("/orders/user/:id",orderController.getOrdersByUserId)
 router.get("/orders/party/:phoneNumber", orderController.getOrdersByParty_phoneNumber);
 
 // OrderItem routes
