@@ -27,13 +27,37 @@ exports.createOrder = asyncHandler(async (req, res) => {
       });
     }
 
-    // Use provided totalAmount or calculated one
-    const orderTotalAmount = req.body.totalAmount || calculatedTotalAmount;
+    // Use  totalAmount 
+    const orderTotalAmount = calculatedTotalAmount;
+    console.log(items);
+    // Update inventory for each item before creating the order
+    const updatedItems = [];
+    for (const item of items) {
+      const orderItem = await OrderItem.findById(item._id);
+      if (!orderItem) {
+        throw new Error(`Order item ${item._id} not found`);
+      }
+      
+      if (orderItem.quantity < item.quantity) {
+        throw new Error(`Insufficient quantity for item ${item._id}. Available: ${orderItem.quantity}, Requested: ${item.quantity}`);
+      }
+      
+      // Reduce the quantity
+      orderItem.quantity -= item.quantity;
+      await orderItem.save();
+      
+      // Update the item with the actual quantity used
+      updatedItems.push({
+        ...item,
+        itemId: orderItem._id,
+        quantity: item.quantity
+      });
+    }
 
-    // Create the order
+    // Create the order with updated items
     const order = new WorkOrder({
       type,
-      items,
+      items: updatedItems,
       adminId,
       partyId,
       description,
@@ -87,7 +111,6 @@ exports.getAllOrders = async (req, res) => {
 
 // get all workorders by admin id
 exports.getOrdersByAdminId = async (req, res) => {
-  console.log("Getting all work orders by admin ID...");
   try {
     const orders = await WorkOrder.find({ adminId: req.params.id });
     res.status(200).json(orders);
@@ -98,7 +121,6 @@ exports.getOrdersByAdminId = async (req, res) => {
 
 // get all workorders by admin id
 exports.getOrdersByUserId = async (req, res) => {
-  console.log("Getting all work orders by admin ID...");
   try {
     const orders = await WorkOrder.find({ userId: req.params.id });
     res.status(200).json(orders);
