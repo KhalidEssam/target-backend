@@ -130,11 +130,5 @@ router.get("/orders/admin/:id", orderController.getOrdersByAdminId);
 router.get("/orders/user/:id",orderController.getOrdersByUserId)
 router.get("/orders/party/:phoneNumber", orderController.getOrdersByParty_phoneNumber);
 
-// OrderItem routes
-router.get("/orderItems", orderController.getAllOrderItems);
-router.post("/orderItems", orderController.createOrderItem);
-router.get("/orderItems/:id", orderController.getOrderItemById);
-router.put("/orderItems/:id", orderController.updateOrderItem);
-router.delete("/orderItems/:id", orderController.deleteOrderItem);
 
 module.exports = router; 

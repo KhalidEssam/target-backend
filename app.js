@@ -20,6 +20,37 @@ db();
 app.use(rateLimiter);
 app.set('trust proxy', 1); // ✅ Best for Railway
 
+
+app.get("/healthcheck", (req, res) => res.send("OK"));
+
+
+
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Express API',
+      version: '1.0.0',
+      description: 'API documentation for the Express backend',
+    },
+    servers: [
+      {
+        url: 'http://localhost:3000',
+      },
+    ],
+  },
+  apis: ['./routes/*.js'],
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+
+// Swagger UI (dev only)
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+}
+
+
+
 // Security headers
 app.use(helmet());
 
@@ -51,29 +82,7 @@ app.use('/', indexRoutes);
 // Webhook route for PayMob
 app.post('/api/webhook/paymob', handlePaymentWebhook);
 
-const swaggerOptions = {
-  definition: {
-    openapi: '3.0.0',
-    info: {
-      title: 'Express API',
-      version: '1.0.0',
-      description: 'API documentation for the Express backend',
-    },
-    servers: [
-      {
-        url: 'http://localhost:3000',
-      },
-    ],
-  },
-  apis: ['./routes/*.js'],
-};
 
-const swaggerSpec = swaggerJsdoc(swaggerOptions);
-
-// Swagger UI (dev only)
-if (process.env.NODE_ENV !== 'production') {
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-}
 
 // 404 handler
 app.use((req, res, next) => {

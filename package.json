@@ -12,6 +12,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@okta/jwt-verifier": "^4.0.1",
     "@okta/okta-auth-js": "^7.10.1",
     "@okta/okta-sdk-nodejs": "^7.1.1",
     "axios": "^1.10.0",
