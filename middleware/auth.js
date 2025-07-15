@@ -20,6 +20,7 @@ const authenticationRequired = async (req, res, next) => {
   const accessToken = match[1];
 
   try {
+    console.log("match",match);
     const jwt = await oktaJwtVerifier.verifyAccessToken(accessToken, "api://default");
     req.user = jwt.claims; // Add user info to request
     next();
